@@ -1,3 +1,3 @@
 # java-map
 
-Java memory, java performance tunning
+Java memory, java performance tuning
