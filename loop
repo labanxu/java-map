@@ -1,0 +1,77 @@
+
+
+
+
+
+Representation error
+
+Consider the following program fragment that uses C language floating-point arithmetic:
+
+double hundred = 100.0;
+double number = 95.0;
+
+if ( number == number / hundred * hundred )
+   printf("Equal\n");
+else
+   printf("Not equal\n");
+On some machines, the above fragment prints "Not equal", because 95.0/100.0 cannot be accurately represented in binary. It might be 0.94999999999, or it might be 0.9500000001 or some other value, and when multiplied by 100 it does not exactly equal 95.0.
+
+Compiler optimizations
+
+Under some Borland compilers on PC-type computers, the following program fragment (identical to the above except that the variables have been replaced with their constant values) prints "Equal":
+
+if ( 95.0 == 95.0 / 100.0 * 100.0 )
+   printf("Equal\n");
+else
+   printf("Not equal\n");
+My best guess is that the compiler is "optimizing" away the constant division and multiplication, causing the statement to appear as "95.0 == 95.0", which is trivially TRUE.
+
+Testing for floating-point "equality"
+
+As the above examples show, floating point numbers cannot reliably be compared for exact equality.
+
+Here is a second example. Using a floating-point number as an "exact" terminating condition in a loop is a very bad idea. Since floating-point numbers are approximations, a test for exact equality will often be wrong:
+
+float x;
+
+x = 0.0;
+while ( x != 1.1 )
+{
+   x = x + 0.1;
+   printf("1.1 minus %f equals %.20g\n", x, 1.1 - x);
+}
+The above loop never terminates on many computers, because 0.1 cannot be accurately represented using binary numbers. Each time through the loop, the error increases, and the sum of eleven "tenths" never quite equals 1.1.
+
+Never test floating-point numbers for exact equality, especially in loops.
+
+Since floating-point numbers are already approximations, the correct way to make the test is to see if the two numbers are "approximately equal".
+
+The usual way to test for approximate equality is to subtract the two floating-point numbers and compare the absolute value of the difference against a very small number, epsilon:
+
+#define EPSILON 1.0e-5   /* a very small value */
+n1 = 95.0;
+n2 = number / hundred * hundred;
+
+if ( fabs(n1-n2) < EPSILON )
+   printf("Equal\n");
+else
+   printf("Not equal\n");
+fabs() is the C library function that returns the floating-point absolute value of its argument.
+
+EPSILON is chosen by the programmer to be small enough that the two numbers can be considered "equal".
+
+The larger the numbers being compared, the larger EPSILON will be. For example, if you are comparing numbers in the range 1.0e100, EPSILON will probably be something near 1.0e95, which is still a very big number, but it is small compared to 1.0e100. (1.0e95 is a ten-thousandth of 1.0e100.) If two numbers having magnitue 1.0e100 differ by only 1.0e95, they may be close enough to be considered equal.
+
+Note that, just as adding a very small floating-point value to a very large one may not change the large one, subtracting floating-point numbers of widely differing magnitudes may have no effect. If the two numbers differ in magnitude by more than the precision of the data type used, the addition or the subtraction won't affect the larger number. For the float data type on most microcomputers, the precision is about 6-7 decimal digits:
+
+float big, small, sum;
+
+big = 1.0e20;
+small = 1.0;
+sum = big - small;
+
+if ( sum == big )
+   printf("Equal\n");   /* this prints */
+else
+   printf("Not equal\n");
+
